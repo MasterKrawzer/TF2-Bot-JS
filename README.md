@@ -3,7 +3,7 @@
 This a bot that is themed around popular shooter game called Team Fortress 2 (TF2 for short).  
 It has some specific command that no other **general** bots able to do.    
 It was made completely by me and the code is controlled only by me.  
-Its current localization is Russian (because I am Russian), English version included.
+Its current localization is Russian (because I am Russian), English version is included.
 ### What can it do?
 This poor bot had 2 major updates when its source language changed from JavaScript to Java and back. Because of this, it has a lack of commands, but I'm working on it.   
 **UPD:**
