@@ -4,7 +4,7 @@ const Token = require("/Users/alexeytkachenko/Documents/GitHub/discordtoken.json
 const config = require("./config.json");
 const fs = require('fs');
 
-
+const service = client.channels.get('567959560900313108');
 const client = new Discord.Client;
 client.on("ready", () => {
     console.log(`Connected as ${client.user.tag}`);
@@ -60,7 +60,7 @@ client.on("message", async msg => {
             .setColor('#fffb3a');
 
         let chan = client.channels.get('567959560900313108');
-        chan.send(emb);
+        service.send(emb);
 
         requestID++;
         
@@ -79,8 +79,8 @@ client.on("message", async msg => {
             .addField('Причина', `**${sArgs}**`)
             .setFooter('ID запроса: ' + requestID)
             .setColor('#ff0000');
-        let chan = client.channels.get('567959560900313108');
-        chan.send(emb);
+        
+        service.send(emb);
 
         requestID++;
         
