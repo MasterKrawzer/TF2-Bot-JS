@@ -160,9 +160,9 @@ client.on("message", async msg => {
                 .addField('Мат запрещен везде кромк NSFW каналов!', '**За злоупотребление: мут на 30 минут**')
                 .addField('Оскорбления, угрозы, унижение достоинства личности запрещены!', '**Бан**')
                 .addField('Спам запрещён!', '**Мут на 1 час**')
-                .addField('Дискриминация', '**Бан на 8 дней**')                
+                .addField('Дискриминация', '**Бан на 8 дней**')
                 .addField('Слив переписки', '**Мут на день**')
-                .addField('Поиск пар','**Мут на 4 дня**')
+                .addField('Поиск пар', '**Мут на 4 дня**')
                 .addField('Взлом аккаунта', '**Бан взломщика и взломанного**')
                 .addField('Распространение личной информации без разрешения', '**Удаление сообщения + мут на день**')
                 .addField('Обман администрации', '**Я не знаю как на это можно купиться, но бан гарантирован обманщику**')
@@ -188,8 +188,8 @@ client.on("message", async msg => {
         const emb = new Discord.RichEmbed()
             .setTitle('Жалоба на игрока')
             .setDescription('Не нравится чот')
-            .addField('Кто?', `Пользователь ${user.tag}`)
-            .addField('За что?', `Причина: ${reason}`)
+            .addField('Кто?', `**Пользователь ${user.tag}**`)
+            .addField('За что?', `**Причина: ${reason}**`)
             .setColor('#ff7b00')
             .setFooter('Просьба принять меры');
         service.send(emb);
@@ -212,17 +212,27 @@ client.on("message", async msg => {
 
             if (args[0].startsWith('#')) {
                 color = args[0];
-            } else if (!color.startsWith('"')) {
+            } else if (color.startsWith('color:')) {
                 color = colorAnalyser(args[0]);
+
                 args.shift();
             } else {
                 color = defaultcolor;
             }
             emb.setColor(color);
             sArgs = args.join(' ');
-            let str = sArgs.slice(1, sArgs.length - 1);
-            let params = str.split(';');
-            emb.addField(params[0].trim(), params[1].trim());
+            let newArgs = sArgs.split('" "');
+
+            newArgs[0] = newArgs[0].slice(1);
+            newArgs[newArgs.length-1] = newArgs[newArgs.length-1].slice(0, newArgs[newArgs.length-1].length-1);
+
+            console.log(newArgs);
+
+            newArgs.forEach((val,i,newArgs) => {
+                let params = val.split(';');
+                emb.addField(params[0].trim(), params[1].trim());
+            })
+
             emb.setAuthor(msg.author.tag);
             news.send(emb);
             return 0;
@@ -238,12 +248,12 @@ client.on("message", async msg => {
 
     if (playingRps === true && msg.author.id === rpsUser.id) {
         let bCh = Math.floor((Math.random() * 3) + 1);
-        
+
         if (msg.content === 'камень') {
             //if (msg.content === )
         }
     }
-    
+
 });/*
 client.on('guildMemberAdd', member => {
     member.createDM.send("Добро пожаловать на нащ сервер! Перед началом, напиши боту 'TF2 Bot' в личку и .help")
