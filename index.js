@@ -5,22 +5,25 @@ const Token = require("/Users/alexeytkachenko/Documents/GitHub/discordtoken.json
 const config = require("./config.json");
 const fs = require('fs');
 
+const test = require("./modules/test");
+const memes = require('./modules/memes')
+const amino = require('./modules/amino')
+const help = require('./modules/help')
 
 const client = new Discord.Client;
 const defaultcolor = '#4F545C';
 var createdChannels = new Map()
 
-const baseHelp = new Discord.RichEmbed()
-    .setTitle('Комманды бота')
-    .setDescription('Все комманды начинаются с точки (.)!')
-    .addField('.memes', 'Показывает все паблики с мемами')
-    .addField('.amino', 'Показывает ссылку на наш Амино :)')
-    .addField('.report', 'Отправить жалобу на игрока')
-    .addField('.rps <выбор>', 'Поиграть в камень-ножницы-бумага с ботом')
-    .addField('.comp <название> <игрок1> <игрок2> ...>', 'Создать группу с <названием> и <игроками>. В группу входит текстовый и голосовой каналы и никто кроме вас и ваших друзей не может войти в группу.')
-    .setThumbnail('https://cdn.icon-icons.com/icons2/1155/PNG/512/1486564730-gears-cogs_81537.png')
-    .setFooter('Не забудь про точку!')
-    .setColor('#ff0000');
+
+
+function rightViolation(msg) {
+    let m1 = msg
+    msg.reply('у Вас нет прав на эту команду!')
+        .then(m => {
+            m1.delete()
+            m.delete(1500)
+        })
+}
 
 function colorAnalyser(tcolor) {
     switch (tcolor) {
@@ -45,19 +48,9 @@ function colorAnalyser(tcolor) {
     }
 }
 
-function searchForSwear(msg) {
-    swear.forEach((val, i, swear) => {
-        if (val === msg.content) {
-            return true;
-        }
-    })
-    return false;
-}
-
 client.on("ready", () => {
     console.log(`Connected as ${client.user.tag}`);
     client.user.setActivity("за тобой ( ͡° ͜ʖ ͡°)", { type: "WATCHING" });
-
 });
 
 client.login(Token.token)
@@ -73,28 +66,26 @@ client.on("message", async msg => {
     var sArgs = args.join(" "); //join what's left of the args into one string
 
     if (command === "test") {//Test command that sends "Hello + user's tag"
-        msg.channel.send(`Hello ${msg.author.tag}!`)
-            .catch(e => console.log(e));
-        return 0;
+        test(msg);
     }
 
     if (command == 'send-args') {
         msg.channel.send(args)
     }
 
-    if (command == 'create-test-channel') {
-        msg.guild.createChannel('new-category', {
-            type: 'text',
-            permissionOverwrites: [{
-                id: msg.id,
-                deny: ['MANAGE_MESSAGES'],
-                allow: ['SEND_MESSAGES']
-            }],
-            parent: msg.guild.channels.find(c => c.name == 'Текстовые каналы')
-        })
-            .then(console.log)
-            .catch(console.error);
-    }
+    // if (command == 'create-test-channel') {
+    //     msg.guild.createChannel('new-category', {
+    //         type: 'text',
+    //         permissionOverwrites: [{
+    //             id: msg.id,
+    //             deny: ['MANAGE_MESSAGES'],
+    //             allow: ['SEND_MESSAGES']
+    //         }],
+    //         parent: msg.guild.channels.find(c => c.name == 'Текстовые каналы')
+    //     })
+    //         .then(console.log)
+    //         .catch(console.error);
+    // }
     if (command == "ping") { //Ping command that calculates bot's ping
         const m = await msg.channel.send("Ping?")
             .catch(e => console.log(e));
@@ -103,73 +94,13 @@ client.on("message", async msg => {
     }
 
     if (command === "memes") { //send embed message with links to TF2 meme reddit/VK communities
-        msg.delete();
-        const emb = new Discord.RichEmbed()
-            .setTitle("Группы с мемами про TF2")
-            .setDescription("Группы с мемами про TF2 с разных соцсетей")
-            .addField('TF2 Subreddit', 'https://www.reddit.com/r/tf2/')
-            .addField('TF2 sh*t poster club subreddit', 'https://www.reddit.com/r/tf2shitposterclub/')
-            .addField('TF2 VK мемы', 'https://vk.com/tf2_muvikigmod')
-            .addField('Мемы про Valve', 'https://vk.com/valvememes')
-            .setColor('#f48f42');
-        msg.channel.send(emb)
-            .then(m => {
-                msg.delete()
-            })
-            .catch(e => console.log(e));
-        return 0;
+        memes(msg)
     }
     if (command === "amino") { //same thing like above but about our russian TF2 amino community
-        msg.delete();
-        const emb = new Discord.RichEmbed()
-            .setTitle('Наша группа Amino')
-            .setDescription('[**__Основная инфа тут__**](https://aminoapps.com/c/TF2AminoRUS/home/)')
-            //.addField('https://aminoapps.com/c/TF2AminoRUS/home/', '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
-            .setThumbnail('http://chittagongit.com/images/teamfortress-2-icon/teamfortress-2-icon-25.jpg')
-            .setFooter('Присоединяйся!', 'http://chittagongit.com/images/teamfortress-2-icon/teamfortress-2-icon-25.jpg')
-            .setColor('#24ad18');
-        msg.channel.send(emb);
-        return 0;
+        amino(msg)
     }
-
     if (command === 'help') { //".help" command that have to be sent directly to the bot 
-        if (msg.member.roles.has(config.adminRole)) {
-            msg.author.send(baseHelp);
-            const emb = new Discord.RichEmbed()
-                .setTitle('Эксклюзивные команды админа')
-                .setTitle('Доступны всем пользователям с ролью `Админ`')
-                .addField('.update-rules', '**Обновить правила в соостветсвии с кодом**')
-                .addField('.send-news', '**Отправить новость в новостной чат** *За помощью с синтаксииом этой комманды писать .helpnews.*')
-                .setColor('#ffff00')
-                .setFooter('Команды хоть и обрабатываются на наличие роли, но просьба держать их в секрете!');
-            msg.author.send(emb);
-            msg.delete();
-        } else if (msg.member.roles.has(config.moderatorRole)) {
-            msg.author.send(baseHelp);
-            const emb = new Discord.RichEmbed()
-                .setTitle('Эксклюзивные команды модератора')
-                .setTitle('Доступны всем пользователям с ролью `Модератор`')
-                .addField('.update-rules', '**Обновить правила в соостветсвии с кодом**')
-                .addField('.send-news', '**Отправить новость в новостной чат** *За помощью с синтаксииом этой комманды писать .helpnews.*')
-                .setColor('#2cc061')
-                .setFooter('Команды хоть и обрабатываются на наличие роли, но просьба держать их в секрете!');
-            msg.author.send(emb);
-            msg.delete();
-        } else if (msg.member.roles.has(config.curatorRole)) {
-            msg.author.send(baseHelp);
-            const emb = new Discord.RichEmbed()
-                .setTitle('Эксклюзивные команды куратора')
-                .setTitle('Доступны всем пользователям с ролью `Куратоор`')
-                .addField('.send-news', '**Отправить новость в новостной чат** *За помощью с синтаксииом этой комманды писать .helpnews.*')
-                .setColor('#82201b')
-                .setFooter('Команды хоть и обрабатываются на наличие роли, но просьба держать их в секрете!');
-            msg.author.send(emb);
-            msg.delete();
-        } else {
-            msg.author.send(baseHelp);
-            msg.delete()
-        }
-        return 0;
+        help(msg)
     }
     if (command === 'helpnews') {
         if (msg.member.roles.has(config.adminRole) || msg.member.roles.has(config.moderatorRole) || msg.member.roles.has(config.curatorRole)) {
@@ -187,7 +118,7 @@ client.on("message", async msg => {
         return 0;
     }
     if (command === 'update-rules') { //sending embed with rules to rules channel
-        if (msg.member.roles.has('548744682172186626') || msg.member.roles.has(config.moderatorRole)) {
+        if (msg.member.roles.has('548744682172186626')) {
             const emb = new Discord.RichEmbed()
                 .setTitle('Правила нашего сервера')
                 .setDescription('**Обязательно к прочтению**')
@@ -248,7 +179,7 @@ client.on("message", async msg => {
     }
 
     if (command === 'send-news') { //.send-news command
-        if (msg.member.roles.has(config.adminRole) || msg.member.roles.has(config.moderatorRole || config.curatorRole)) {
+        if (msg.member.roles.has(config.adminRole) || msg.member.roles.has(config.moderatorRole) || msg.member.roles.has(config.curatorRole)) {
             const news = client.channels.get('598558300954427408'); //getting the news channel
             if (args[0] === 'simple') { //if user wants just to send simple message as a news
                 args.shift(); //removing 'simple'
@@ -343,6 +274,8 @@ client.on("message", async msg => {
                     m1.delete(5000)
                 })
             return 1;
+        } else {
+            rightViolation(msg)
         }
     }
     if (command === 'colors' && msg.channel.type === 'dm') {
@@ -501,20 +434,21 @@ client.on("message", async msg => {
         }
     }
     if (command === 'delete') {
-        if ((msg.member.roles.has(config.adminRole)) || (msg.member.roles.has(config.moderatorRole)) || (msg.member.roles.has(config.curatorRole))) {
+        if ((msg.member.roles.has(config.adminRole)) || (msg.member.roles.has(config.moderatorRole))) {
             console.log(parseInt(args[0]) + 1)
             if (args[0] > 100) {
                 msg.reply('нельзя удалять более 100 сообщений за раз!')
+                return 1
             }
             msg.channel.bulkDelete(parseInt(args[0]) + 1, true)
                 .then(m => {
-                    msg.reply(`удалено ${m.size} сообщений!`)
+                    msg.reply(`удалено ${m.size} + 1 сообщений!`)
                         .then(m => m.delete(1000))
                 })
-                // .catch(() => {
-                //     console.error
-                //     return 1
-                // })
+                .catch(() => {
+                    console.error()
+                    return 1
+                })
         } else {
             msg.reply('у Вас нет прав на эту команду!')
             return 1
