@@ -3,12 +3,14 @@
 const Discord = require("discord.js");
 const Token = require("/Users/alexeytkachenko/Documents/GitHub/discordtoken.json");
 const config = require("./config.json");
-const fs = require('fs');
 
 const test = require("./modules/test");
 const memes = require('./modules/memes')
 const amino = require('./modules/amino')
 const help = require('./modules/help')
+const helpnews = require('./modules/helpnews')
+const updaterules = require('./modules/update-rules')
+const report = require('./modules/report')
 
 const client = new Discord.Client;
 const defaultcolor = '#4F545C';
@@ -73,19 +75,6 @@ client.on("message", async msg => {
         msg.channel.send(args)
     }
 
-    // if (command == 'create-test-channel') {
-    //     msg.guild.createChannel('new-category', {
-    //         type: 'text',
-    //         permissionOverwrites: [{
-    //             id: msg.id,
-    //             deny: ['MANAGE_MESSAGES'],
-    //             allow: ['SEND_MESSAGES']
-    //         }],
-    //         parent: msg.guild.channels.find(c => c.name == 'Текстовые каналы')
-    //     })
-    //         .then(console.log)
-    //         .catch(console.error);
-    // }
     if (command == "ping") { //Ping command that calculates bot's ping
         const m = await msg.channel.send("Ping?")
             .catch(e => console.log(e));
@@ -94,88 +83,26 @@ client.on("message", async msg => {
     }
 
     if (command === "memes") { //send embed message with links to TF2 meme reddit/VK communities
-        memes(msg)
+        memes(msg);
     }
     if (command === "amino") { //same thing like above but about our russian TF2 amino community
-        amino(msg)
+        amino(msg);
     }
     if (command === 'help') { //".help" command that have to be sent directly to the bot 
-        help(msg)
+        help(msg);
     }
     if (command === 'helpnews') {
-        if (msg.member.roles.has(config.adminRole) || msg.member.roles.has(config.moderatorRole) || msg.member.roles.has(config.curatorRole)) {
-            let message = "";
-            message += 'Итак, для отправки новостей используется следующий синтаксис:\n';
-            message += 'Cпособ 1: отправка простого сообщения -- `.send-news simple <ваш_текст>`\n';
-            message += 'Способ 2: отправка сложного сообщения -- `.send-news embed <цвет_сообщения>(можно не указывать) "<заголовок_поля>;<текст_поля>"`\n'
-            message += 'Таких полей может быть не более 25. В каждом <тексте_поля> можно использовать Markdown, но его нельзя использовать в заголовках.\n';
-            message += 'Примеры этих сообщений есть в новостном чате. Перед отправкой новостей просьба хорошенько подумать. Потому что их может удалять только модераторы и выше.\n';
-            message += 'Цвет новости нужно отправлять как hex код цвета, или использовать готовый цвет. *Список готовых цветов можно посмотреть командой .colors (отправлять мне)*.\n';
-            message += 'Команду отправлять мне лично!'
-            msg.author.send(message);
-        }
-        msg.delete();
-        return 0;
+        helpnews(msg);
     }
-    if (command === 'update-rules') { //sending embed with rules to rules channel
-        if (msg.member.roles.has('548744682172186626')) {
-            const emb = new Discord.RichEmbed()
-                .setTitle('Правила нашего сервера')
-                .setDescription('**Обязательно к прочтению**')
-                .addField('Нарушение авторских прав', 'Бан на неделю')
-                .addField('18+ запрещено!', '**За первое нарушение: Предупреждение и скрытия поста. За второй раз: Режим чтения и скрытия поста. За третий раз: Бан**')
-                .addField('Реклама других сообществ,своего канала на ютубе запрещена', '**Удаление сообщения** *Можно попросить разрешения у модеров и выше*')
-                .addField('Мат запрещен везде кромк NSFW каналов!', '**За злоупотребление: мут на 30 минут**')
-                .addField('Оскорбления, угрозы, унижение достоинства личности запрещены!', '**Бан**')
-                .addField('Спам запрещён!', '**Мут на 1 час**')
-                .addField('Дискриминация', '**Бан на 8 дней**')
-                .addField('Слив переписки', '**Мут на день**')
-                .addField('Поиск пар', '**Мут на 4 дня**')
-                .addField('Взлом аккаунта', '**Бан взломщика и взломанного**')
-                .addField('Распространение личной информации без разрешения', '**Удаление сообщения + мут на день**')
-                .addField('Обман администрации', '**Я не знаю как на это можно купиться, но бан гарантирован обманщику**')
-                .setColor('#ff0000');
-
-            let rulesChan = client.channels.get('575394554858045451');
-            rulesChan.send(emb);
-            msg.delete();
-        }
-        return 0;
+    if (command === 'update-rules') {
+        updaterules(msg)
     }
     if (command === 'mentioned') {
         console.log(msg.mentions.users.first())
         return 0;
     }
     if (command === 'report') {
-        const service = client.channels.get('575395400282931201');
-        let user = msg.mentions.users.first();
-        if (!user) {
-            msg.reply('Не смог найти пользователя!')
-            return 1;
-        }
-        args.shift();
-        let reason = args.join(' ').trim();
-        if (!reason) {
-            msg.reply('Не указана причина жалобы!')
-            return 1;
-        }
-        msg.channel.send(`Была подана жалоба на пользователя ${user.tag}. Приятного дня!)`)
-            .catch((e) => console.log(e));
-        msg.delete();
-        const emb = new Discord.RichEmbed()
-            .setTitle('Жалоба на игрока')
-            .setDescription('Не нравится чот')
-            .addField('Кто?', `**Пользователь ${user.tag}**`)
-            .addField('За что?', `**Причина: ${reason}**`)
-            .setColor('#ff7b00')
-            .setFooter('Просьба принять меры');
-        service.send(emb)
-            .catch(e => {
-                console.error()
-                msg.reply('Не смог подать жалобу на игрока!');
-                return 1;
-            })
-        return 0;
+        report(msg, client, args)    
     }
 
     if (command === 'send-news') { //.send-news command
@@ -454,8 +381,11 @@ client.on("message", async msg => {
             return 1
         }
     }
-    if (command === 'send-messages') {
-        msg.reply(msg.channel.messages.array().length)
+    if (command === 'text') {
+        var allText
+        fetch.fetchUrl(msg.attachments.array()[0].url, function (error, meta, body) {
+            console.log(body.toString());
+        });
     }
 });
 client.on('error', (error) => {
