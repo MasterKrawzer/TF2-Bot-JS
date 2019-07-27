@@ -1,7 +1,8 @@
 const fetch = require('fetch')
-module.exports = (msg) => {
+const Discord = require('discord.js')
+module.exports = (msg, client) => {
     fetch.fetchUrl(msg.attachments.array()[0].url, (error, meta, body) => {
-        let lines = body.toString().split("\n")
+        let lines = body.toString().split("::")
         let emb = new Discord.RichEmbed()
         emb.setTitle('Правила нашего сервера')
         emb.setDescription('**Обязательно к прочтению**')
@@ -11,7 +12,7 @@ module.exports = (msg) => {
             let params = l.split(';;')
             emb.addField(params[0].trim(), params[1].trim())
         })
-        let rulesChan = client.channels.get('599874738269061121');
+        let rulesChan = client.channels.get('602176864223494164');
         // rulesChan.bulkDelete(1, true)
         //     .catch(console.error)
         rulesChan.send(emb)
