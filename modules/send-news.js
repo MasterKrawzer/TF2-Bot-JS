@@ -1,5 +1,6 @@
 const config = require("../config.json");
 const Discord = require("discord.js");
+const defaultcolor = '#4F545C'
 function colorAnalyser(tcolor) {
     switch (tcolor) {
         case 'red':
@@ -27,73 +28,56 @@ module.exports = (msg, client, args) => {
         const news = client.channels.get('598558300954427408'); //getting the news channel
         if (args[0] === 'simple') { //if user wants just to send simple message as a news
             args.shift(); //removing 'simple'
-            if (args[0] === 'dm') { //if user wants to send news to everyone on the server 
-                if (msg.member.roles.has(config.adminRole)) { //and if the member has admin role
-                    args.shift(); //removing 'dm'
-                    let txt = args.join(' ').trim(); //getting and trimming the text
-                    if (!txt) { msg.reply('Отсутствует текст новости!'); return 1; }  //if no text specified reply with an error
-                    txt += `\nАвтор: ${msg.author.tag}` //addding the author to the message
-                    client.users.forEach((u, i, users) => { //for each user on the server
-                        if (!u.bot) { //if user isn't a bot
-                            u.send(txt) //send message with txt
-                                .catch(e => { //resolving promise if something goes wrong so our bot won't crash
-                                    console.error()
-                                    console.log(u)
-                                });
-                        }
-                    })
-                    //.catch(e => console.log(e)); //resolving promise when getting users if something goes wrong so our bot won't crash
-                    msg.author.send('Успешно отпралена рассылка пользователям!')
-                    return 0;
-                } else { //if non-admin user decided to do the mailing
-                    msg.reply('Не достаточно прав для рассылки!') //just repling that he/she doesn't have enough permissions
-                    return 1;
-                }
-            } else { //if 'dm' isn't specified
-                let txt = args.join(' ').trim(); //same thing as described before
-                if (!txt) { msg.reply('Отсутствует текст новости!'); return 1; }
-                txt += `\nАвтор: ${msg.author.tag}`
-                news.send(txt);
-                msg.delete()
-                msg.channel.send(`<@${msg.author.id}>, успешно опубликованна новость!`)
-                    .then(m => {
-                        m.delete(500);
-                    });
-                return 0;
-            }
+            //if 'dm' isn't specified
+            let txt = args.join(' ').trim(); //same thing as described before
+            if (!txt) { msg.reply('Отсутствует текст новости!'); return 1; }
+            txt += `\nАвтор: ${msg.author.tag}`
+            news.send(txt);
+            msg.delete()
+            msg.channel.send(`<@${msg.author.id}>, успешно опубликованна новость!`)
+                .then(m => {
+                    m.delete(500);
+                });
+            return 0;
         }
-        if (args[0] === 'embed') { //if user w
-            args.shift();
+
+        if (args[0] === 'embed') { //In case of embeded message
+            args.shift(); //Shift 'embed'
             let emb = new Discord.RichEmbed();
             let color = "";
-            if (args[0].startsWith('"')) {
+            
+            if (args[0].startsWith('"')) {  //Get the color of the message
                 color = defaultcolor
-            } else if (args[0].startsWith('#')) {
-                color = args[0].toLowerCase()
-                console.log(color)
-                args.shift();
+            } else if (args[0].startsWith("#")) {
+                color = args[0]
             } else {
                 color = colorAnalyser(args[0])
-                args.shift();
             }
+            args.shift() //Shift color
             emb.setColor(color);
+
             if (!args[0]) {
                 msg.reply('Не указаны поля новости!');
                 return 1;
             }
-            if (args.length > 25) {
+            let fields = args.join(' ').split('"')
+            fields.forEach((f, i) => { //Filter 'fields' from empty elements
+                if (f == "" || f == " ") {
+                    fields.splice(i, 1)
+                }
+            });
+
+            if (fields.length > 25) {
                 msg.reply('Слишком много полей!');
                 return 1;
             }
-            sArgs = args.join(' ');
-            let newArgs = sArgs.split('" "');
-            let i = 0
-            newArgs.forEach((str, i) => {
-                newArgs[i] = str.slice(1, str.length - 1)
+            var text = new Array()
+            fields.forEach(f => { //Splitting elemets of the 'fields' into arrays of field parts
+                text.push(f.split(';'))
             })
-
-            newArgs.forEach((val, i, newArgs) => {
-                let params = val.split(';');
+            
+            text.forEach(val => { //Adding fields to the message
+                let params = val;
                 if (!params[0] || !params[1]) {
                     msg.reply('Не указаны значения поля!')
                     return 1;
@@ -111,11 +95,9 @@ module.exports = (msg, client, args) => {
                 })
             return 0;
         }
-        let m1 = msg
         msg.reply('Ошибка в выборе вида новости :(')
             .then(m => {
                 m.delete(2000)
-                m1.delete(5000)
             })
         return 1;
     } else {

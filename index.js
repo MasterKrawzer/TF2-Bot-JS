@@ -16,11 +16,11 @@ const report = require('./modules/report')
 const send_news = require('./modules/send-news')
 const rps = require('./minigames/rps')
 const comp = require('./modules/comp')
-
+const remove = require('./modules/remove')
+const del = require('./modules/delete')
 const client = new Discord.Client
-const defaultcolor = '#4F545C'
+
 var createdChannels = new Map()
-var users = new Map()
 class user {
     constructor(id) {
         this.id = id
@@ -35,28 +35,6 @@ class user {
     }
 }
 
-function set_database(map) {
-    fs.writeFile('database.json', JSON.stringify([...map]), error => { if (error) { console.log(error) } })
-}
-
-function get_database() {
-    var result = new Map()
-    fs.readFile('database.json', (error, data) => {
-        console.log(JSON.parse(data.toString()))
-        result = JSON.parse(data.toString())
-    })
-    return result
-}
-
-function rightViolation(msg) {
-    let m1 = msg
-    msg.reply('у Вас нет прав на эту команду!')
-        .then(m => {
-            m1.delete()
-            m.delete(1500)
-        })
-}
-
 client.on("ready", () => {
     console.log(`Connected as ${client.user.tag}`)
     client.user.setActivity("за тобой ( ͡° ͜ʖ ͡°)", { type: "WATCHING" })
@@ -67,7 +45,9 @@ client.login(Token.token)
 
 client.on("message", async msg => {
 
-    if (msg.author.bot || !msg.content.startsWith(config.prefix)) return 2
+    if (msg.author.bot || !msg.content.startsWith(config.prefix)) {
+        if (!msg.content.startsWith("+")) return 2
+    }
 
     var args = msg.content.split(" ") //create args array
     let command = args[0].slice(1) //get the clear command for the args and clear it of the prefix
@@ -99,7 +79,7 @@ client.on("message", async msg => {
     if (command === 'help') { //".help" command that have to be sent directly to the bot 
         help(msg)
     }
-    if (command === 'helpnews') {
+    if (command === 'help-news') {
         helpnews(msg)
     }
     if (command === 'update-rules') {
@@ -139,42 +119,10 @@ client.on("message", async msg => {
         comp(msg, args, createdChannels)
     }
     if (command === 'remove') {
-        if (createdChannels.get(msg.author)) {
-            let category = msg.guild.channels.find(c => c.name == createdChannels.get(msg.author))
-            let channeldsToDelete = category.children.map(c => { return c })
-            console.log(channeldsToDelete.map(c => { return c.name }))
-
-            channeldsToDelete[0].delete().catch(console.error)
-            channeldsToDelete[1].delete().catch(console.error)
-            category.delete()
-
-            msg.reply(`удалена группа **'${category.name}'**!`)
-            createdChannels.delete(msg.author)
-        } else {
-            msg.reply('у Вас нет созданных групп!')
-            return 1
-        }
+        remove(msg, createdChannels)
     }
     if (command === 'delete') {
-        if ((msg.member.roles.has(config.adminRole)) || (msg.member.roles.has(config.moderatorRole))) {
-            console.log(parseInt(args[0]) + 1)
-            if (args[0] > 99) {
-                msg.reply('нельзя удалять более 99 + 1 сообщений за раз!')
-                return 1
-            }
-            msg.channel.bulkDelete(parseInt(args[0]) + 1, true)
-                .then(m => {
-                    msg.reply(`удалено ${m.size} + 1 сообщений!`)
-                        .then(m => m.delete(1000))
-                })
-                .catch(() => {
-                    console.error()
-                    return 1
-                })
-        } else {
-            msg.reply('у Вас нет прав на эту команду!')
-            return 1
-        }
+        del(msg, args)
     }
     if (command === 'text') {
         var allText
@@ -184,25 +132,54 @@ client.on("message", async msg => {
     }
 
     if (command === 'init-users') {
-        var users = new Map()
-        client.users.forEach(u => {
-            users.set(u.id, 0)
-        })
-        set_database(users)
-        var users = get_database()
-        console.log([...users])
-    }
-    if (command === '+rep') {
-        var senderId = msg.author
-        var getterId = msg.mentions.users.first().id
-        users = get_database()
-        if (users.get(getterId) < args[1]) {
-            msg.reply('У Вас слишком мало репутации для отправки! ' + users.get(getterId))
+        if (msg.author.id == "315339158912761856") {
+            var db = new Object();
+            msg.guild.members.forEach(m => {
+                if (m.roles.has("548744682172186626")) { //If user's an admin
+                    db[m.id] = {
+                        "rep": 1000,
+                        "mge": 0
+                    }
+                } else if (m.roles.has("548744536512528391")) { //If user's a moderator
+                    db[m.id] = {
+                        "rep": 500,
+                        "mge": 0
+                    }
+                } else { //If user's is a mortal
+                    db[m.id] = {
+                        "rep": 0,
+                        "mge": 0
+                    }
+                }
+            })
+            fs.writeFile('database.json', JSON.stringify(db, null, 2), () => { return }) //Save that bs
+            console.log("Succesfully initilized and reset user's stats")
         }
-        users.set(getterId, args[1])
-        set_database(users)
-        users = get_database()
-    }   
+    }
+    if (msg.content.startsWith('+rep')) {
+        var db = JSON.parse(fs.readFileSync('database.json')) //Get the database 
+        var getter = msg.author
+        var sender = msg.mentions.users.first()
+        
+        if (sender == undefined) { //Check if user isn't defined
+            msg.reply('не указан пользователь!')
+            return 1
+        }
+
+        if (db[getter.id]["rep"] < args[1]) { //Checking if user got enough reputation
+            msg.reply(`Невозможно отправить столько репутации! ${args[1]} rep > ${db[getter.id]["rep"]} rep`)
+            return 1
+        }
+        db[sender.id]["rep"] = parseInt(db[sender.id]["rep"]) + parseInt(args[1]) //Transmitting reputation
+        db[getter.id]["rep"] = parseInt(db[getter.id]["rep"]) - parseInt(args[1])
+        fs.writeFile('database.json', JSON.stringify(db, null, 2), (error) => { //Saving the database
+            if (error) {
+                console.log(error)
+            } else {
+                msg.reply("Успешно передана репутация пользователю " + sender.username)
+            }
+        })
+    }
 })
 client.on('disconnect', () => {
     // let с = client.channels.find(c => c.id == '598558300954427408')
