@@ -18,22 +18,16 @@ const rps = require('./minigames/rps')
 const comp = require('./modules/comp')
 const remove = require('./modules/remove')
 const del = require('./modules/delete')
-const client = new Discord.Client
+const init_users = require('./modules/init-users')
+const rep = require('./modules/rep')
+const emojis = require('./emojis')
+
+const client = new Discord.Client({
+    autoReconnect: true,
+    messageCacheLifetime: 0
+})
 
 var createdChannels = new Map()
-class user {
-    constructor(id) {
-        this.id = id
-        this.rep = 0
-    }
-    info() {
-        const emb = new Discord.RichEmbed()
-            .setTitle(`Рассматриваем игрока ${client.users.find(u => u.id == id).username}`)
-            .addField(`Репутация: ${this.rep}`)
-            .setAuthor(msg.author)
-        msg.channel.send(emb)
-    }
-}
 
 client.on("ready", () => {
     console.log(`Connected as ${client.user.tag}`)
@@ -44,9 +38,8 @@ client.login(Token.token)
     .catch(console.error)
 
 client.on("message", async msg => {
-
-    if (msg.author.bot || !msg.content.startsWith(config.prefix)) {
-        if (!msg.content.startsWith("+")) return 2
+    if (msg.author.bot) {
+        if (!msg.content.startsWith("+") || !msg.content.startsWith(config.prefix)) return 2
     }
 
     var args = msg.content.split(" ") //create args array
@@ -64,10 +57,7 @@ client.on("message", async msg => {
     }
 
     if (command == "ping") { //Ping command that calculates bot's ping
-        const m = await msg.channel.send("Ping?")
-            .catch(e => console.log(e))
-        m.edit(`Pong! Latency is ${m.createdTimestamp - msg.createdTimestamp}ms. Bot's Latency is ${Math.round(client.ping)}ms.`)
-            .catch(e => console.log(e))
+        msg.reply(`пинг бота: ${client.ping()}`)
     }
 
     if (command === "memes") { //send embed message with links to TF2 meme reddit/VK communities
@@ -90,6 +80,7 @@ client.on("message", async msg => {
         return 0
     }
     if (command === 'report') {
+        console.log("reporting")
         report(msg, client, args)
     }
 
@@ -132,53 +123,51 @@ client.on("message", async msg => {
     }
 
     if (command === 'init-users') {
-        if (msg.author.id == "315339158912761856") {
-            var db = new Object();
-            msg.guild.members.forEach(m => {
-                if (m.roles.has("548744682172186626")) { //If user's an admin
-                    db[m.id] = {
-                        "rep": 1000,
-                        "mge": 0
-                    }
-                } else if (m.roles.has("548744536512528391")) { //If user's a moderator
-                    db[m.id] = {
-                        "rep": 500,
-                        "mge": 0
-                    }
-                } else { //If user's is a mortal
-                    db[m.id] = {
-                        "rep": 0,
-                        "mge": 0
-                    }
-                }
-            })
-            fs.writeFile('database.json', JSON.stringify(db, null, 2), () => { return }) //Save that bs
-            console.log("Succesfully initilized and reset user's stats")
-        }
+        init_users(msg)
     }
     if (msg.content.startsWith('+rep')) {
-        var db = JSON.parse(fs.readFileSync('database.json')) //Get the database 
-        var getter = msg.author
-        var sender = msg.mentions.users.first()
-        
-        if (sender == undefined) { //Check if user isn't defined
-            msg.reply('не указан пользователь!')
-            return 1
+        rep(msg, args)
+    }
+
+    if (command === 'get-emoji') {
+        console.log(client.emojis.find(e => e.name = ':one:'))
+    }
+
+    if (command === 'vote') {
+        var emb = new Discord.RichEmbed().setColor('#ffa500')
+        if (args[0]) {
+            var options = args.join(' ').split(';')
+            emb.setTitle(options[0])
+            options.shift()
+            if (options.length > 10) {
+                msg.reply('нельзя указывать более 10 опций!')
+            }
+
+            var stringOptions = new String()
+            options.forEach((o, i) => {
+                stringOptions += (i + 1).toString() + ". " + o.trim() + "\n"
+            })
+            emb.setDescription('**' + stringOptions.slice(0, stringOptions.length - 1) + "**")
+            msg.channel.send(emb)
+                .then(async msgg => {
+                    for (var i = 1; i < options.length + 1; i++) {
+                        await msgg.react(emojis[i])
+                    }
+                })
+        } else {
+            msg.reply('укажите опции голосования!')
         }
 
-        if (db[getter.id]["rep"] < args[1]) { //Checking if user got enough reputation
-            msg.reply(`Невозможно отправить столько репутации! ${args[1]} rep > ${db[getter.id]["rep"]} rep`)
-            return 1
-        }
-        db[sender.id]["rep"] = parseInt(db[sender.id]["rep"]) + parseInt(args[1]) //Transmitting reputation
-        db[getter.id]["rep"] = parseInt(db[getter.id]["rep"]) - parseInt(args[1])
-        fs.writeFile('database.json', JSON.stringify(db, null, 2), (error) => { //Saving the database
-            if (error) {
-                console.log(error)
-            } else {
-                msg.reply("Успешно передана репутация пользователю " + sender.username)
-            }
-        })
+    }
+    if (command === 'ban') {
+        var victimn = msg.mentions.members.first()
+        var reason = args[1]
+        msg.reply(`Вы, ${msg.author.username}, уверены в том, что хотите забанить ${victimn.user.username} по причине '${reason}'?`)
+            .then(async m => {
+                await m.react('✅')
+                m.react('❌')
+
+            })
     }
 })
 client.on('disconnect', () => {

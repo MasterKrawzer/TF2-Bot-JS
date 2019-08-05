@@ -1,4 +1,4 @@
-module.exports = (msg,args, createdChannels) => {
+module.exports = (msg, args, createdChannels) => {
     if (!createdChannels.get(msg.author)) {
         if (args) {
             let name = args[0].trim()

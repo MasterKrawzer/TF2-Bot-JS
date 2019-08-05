@@ -17,7 +17,7 @@ module.exports = (msg, client, args) => {
     msg.delete();
     const emb = new Discord.RichEmbed()
         .setTitle('Жалоба на игрока')
-        .setDescription('Не нравится чот')
+        // .setDescription('Не нравится чот')
         .addField('Кто?', `**Пользователь: ${user.tag}**`)
         .addField('За что?', `**Причина: ${reason}**`)
         .setColor('#ff7b00')

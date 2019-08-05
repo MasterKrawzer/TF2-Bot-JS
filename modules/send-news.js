@@ -31,7 +31,7 @@ module.exports = (msg, client, args) => {
             //if 'dm' isn't specified
             let txt = args.join(' ').trim(); //same thing as described before
             if (!txt) { msg.reply('Отсутствует текст новости!'); return 1; }
-            txt += `\nАвтор: ${msg.author.tag}`
+            txt += `\nАвтор: ${msg.author.username}`
             news.send(txt);
             msg.delete()
             msg.channel.send(`<@${msg.author.id}>, успешно опубликованна новость!`)
