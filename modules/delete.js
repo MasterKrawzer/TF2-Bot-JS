@@ -5,13 +5,13 @@ module.exports = (msg, args) => {
         if (!args[0]) {
             msg.reply('укажите количество сообщений для удаления!')
         }
-        if (args[0] > 99) {
+        if (args[0] > 100) {
             msg.reply('нельзя удалять более 99 + 1 сообщений за раз!')
             return 1
         }
-        msg.channel.bulkDelete(parseInt(args[0]) + 1, true)
+        msg.channel.bulkDelete(parseInt(args[0]), true)
             .then(m => {
-                msg.reply(`удалено ${m.size} сообщений!`)
+                msg.reply(`удалено ${m.size} + 1 сообщений!`)
                     .then(m => m.delete(1000))
             })
             .catch(() => {

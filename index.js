@@ -15,7 +15,7 @@ const updaterules = require('./modules/update-rules')
 const report = require('./modules/report')
 const send_news = require('./modules/send-news')
 const rps = require('./minigames/rps')
-const comp = require('./modules/comp')
+const comp = require('./modules/group')
 const remove = require('./modules/remove')
 const del = require('./modules/delete')
 const init_users = require('./modules/init-users')
@@ -41,7 +41,7 @@ client.on("message", async msg => {
     if (msg.author.bot) {
         if (!msg.content.startsWith("+") || !msg.content.startsWith(config.prefix)) return 2
     }
-
+    
     var args = msg.content.split(" ") //create args array
     let command = args[0].slice(1) //get the clear command for the args and clear it of the prefix
     args.shift() //delete args's first element (the command)
@@ -54,10 +54,11 @@ client.on("message", async msg => {
 
     if (command == 'send-args') {
         msg.channel.send(args)
+        console.log(args)
     }
 
     if (command == "ping") { //Ping command that calculates bot's ping
-        msg.reply(`пинг бота: ${client.ping()}`)
+        msg.reply(`пинг бота: ${client.ping}`)
     }
 
     if (command === "memes") { //send embed message with links to TF2 meme reddit/VK communities
@@ -80,7 +81,6 @@ client.on("message", async msg => {
         return 0
     }
     if (command === 'report') {
-        console.log("reporting")
         report(msg, client, args)
     }
 
@@ -106,7 +106,7 @@ client.on("message", async msg => {
     if (command === 'rps') {
         rps(msg, args)
     }
-    if (command === 'comp') {
+    if (command === 'group') {
         comp(msg, args, createdChannels)
     }
     if (command === 'remove') {
@@ -161,12 +161,35 @@ client.on("message", async msg => {
     }
     if (command === 'ban') {
         var victimn = msg.mentions.members.first()
+        var avatarURL = ''
+        if (victimn.user.avatar) {
+            var pendingAvatar = victimn.user.avatarURL.split('size=')
+            pendingAvatar[1] = '128'
+            avatarURL = pendingAvatar.join('size=')
+        } else {
+            avatarURL = victimn.user.defaultAvatarURL + "?size=128"
+        }
+
         var reason = args[1]
         msg.reply(`Вы, ${msg.author.username}, уверены в том, что хотите забанить ${victimn.user.username} по причине '${reason}'?`)
             .then(async m => {
                 await m.react('✅')
                 m.react('❌')
-
+                m.awaitReactions((reaction, user) => reaction.emoji.name == "✅" && user.id == msg.author.id, { time: 15000 })
+                    .then(reactions => {
+                        if (reactions.size > 0) {
+                            const ban = new Discord.RichEmbed()
+                                .setTitle(`Забанен игрок ${victimn.user.username}!`)
+                                .addField('Забанен игроком', msg.author.username, true)
+                                .addField('Причина', reason, true)
+                                .setImage(avatarURL)
+                                .setColor('#FF0000')
+                                .setFooter('Мы тебя забудем', client.user.avatarURL)
+                                .setTimestamp(new Date())
+                            msg.channel.send(ban)
+                            victimn.ban({days: 7, reason: reason})
+                        }
+                    })
             })
     }
 })

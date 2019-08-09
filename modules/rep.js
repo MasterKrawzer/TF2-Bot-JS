@@ -10,7 +10,7 @@ module.exports = (msg, args) => {
         }
 
         if (db[getter.id]["rep"] < args[1]) { //Checking if user got enough reputation
-            msg.reply(`Невозможно отправить столько репутации! ${args[1]} rep > ${db[getter.id]["rep"]} rep`)
+            msg.reply(`Невозможно отправить столько репутации!\n${args[1]} rep > ${db[getter.id]["rep"]} rep`)
             return 1
         }
         db[sender.id]["rep"] = parseInt(db[sender.id]["rep"]) + parseInt(args[1]) //Transmitting reputation
@@ -19,7 +19,7 @@ module.exports = (msg, args) => {
             if (error) {
                 console.log(error)
             } else {
-                msg.reply("Успешно передана репутация пользователю " + sender.username)
+                msg.reply("Успешно передана репутация пользователю " + sender.username + '!')
             }
         })
 }

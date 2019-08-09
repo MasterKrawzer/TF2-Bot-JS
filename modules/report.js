@@ -21,7 +21,8 @@ module.exports = (msg, client, args) => {
         .addField('Кто?', `**Пользователь: ${user.tag}**`)
         .addField('За что?', `**Причина: ${reason}**`)
         .setColor('#ff7b00')
-        .setFooter('Просьба принять меры');
+        .setFooter('Просьба принять меры')
+        .setFooter('Баним/Кикаем/Мутим?')
     service.send(emb)
         .then(async msg => {
             await msg.react('✅')
